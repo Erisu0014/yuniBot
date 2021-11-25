@@ -1,7 +1,1 @@
-# aliceBot
-
-## How to start
-
-1. generate project using `nb create` .
-2. writing your plugins under `alicebot/plugins` folder.
-3. run your bot using `nb run` .
+基于nonebot的频道处理bot[dev]
