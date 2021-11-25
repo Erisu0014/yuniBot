@@ -1,7 +1,6 @@
 from nonebot import logger
 from alicebot.plugins.nonebot_guild_patch import GuildMessageEvent, patched_send
 from nonebot.adapters.cqhttp.event import Sender
-
 from nonebot.adapters.cqhttp import Bot, MessageSegment
 from nonebot import on_command
 from nonebot import require
@@ -21,12 +20,13 @@ import aiohttp
 import feedparser
 from PIL import Image
 from nonebot import get_driver
-
 from .config import Config
 
 global_config = get_driver().config
 config = Config(**global_config.dict())
-bot_id = 1503306252
+bot_id = config.dict().get("bot_id")
+bot_guild_id = config.dict().get("bot_guild_id")
+
 rss_news = {}
 
 data = {
@@ -297,7 +297,7 @@ def format_brief_msg(news):
 
 
 async def guild_process(event: GuildMessageEvent):
-    bot = get_driver().bots[str(bot_id)]
+    bot = get_driver().bots[bot_id]
     await refresh_all_rss()
     # todo guildId根据api获取，并通过for循环推送
     gid = 13914601637229449
@@ -445,13 +445,13 @@ async def rss_cmd(bot: Bot, event: GuildMessageEvent):
 
 scheduler = require("nonebot_plugin_apscheduler").scheduler
 
-
+#todo 频道列表和子频道列表动态传参
 @scheduler.scheduled_job('interval', minutes=5)
 async def job():
-    sender = Sender(user_id='144115218678801167')
+    sender = Sender(user_id=bot_guild_id)
     event = GuildMessageEvent(time=int(time.time()), self_id=bot_id,
-                              post_type='message', sub_type='channel', user_id='144115218678801167',
+                              post_type='message', sub_type='channel', user_id=bot_guild_id,
                               message_type='guild', message_id='133-38101123160', guild_id='13914601637229449',
                               channel_id='1480002', message="0",
-                              sender=sender, self_tiny_id=144115218678801167)
+                              sender=sender, self_tiny_id=int(bot_guild_id))
     await guild_process(event)

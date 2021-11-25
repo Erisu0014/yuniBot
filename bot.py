@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+import os
 
 import nonebot
 from nonebot.adapters.cqhttp import Bot as CQHTTPBot
@@ -14,6 +15,7 @@ from nonebot.adapters.cqhttp import Bot as CQHTTPBot
 #            format=default_format)
 
 # You can pass some keyword args config to init function
+
 nonebot.init(apscheduler_autostart=True)
 app = nonebot.get_asgi()
 

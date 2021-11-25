@@ -5,6 +5,4 @@
 @File    : __init__.py.py
 @DES     : 
 """
-# import sys
 
-# sys.path.append(r'D:\pycharmProjects\aliceBot\alicebot\plugins')
