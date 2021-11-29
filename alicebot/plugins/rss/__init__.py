@@ -1,7 +1,7 @@
 from nonebot import logger
 from alicebot.plugins.nonebot_guild_patch import GuildMessageEvent, patched_send
 from nonebot.adapters.cqhttp.event import Sender
-from nonebot.adapters.cqhttp import Bot, MessageSegment
+from nonebot.adapters.cqhttp import Bot, MessageSegment,Message
 from nonebot import on_command
 from nonebot import require
 import asyncio
@@ -19,6 +19,7 @@ from io import BytesIO
 import aiohttp
 import feedparser
 from PIL import Image
+from alicebot.utils import send_guild_message
 from nonebot import get_driver
 from .config import Config
 
@@ -296,34 +297,28 @@ def format_brief_msg(news):
     return msg
 
 
-async def guild_process(event: GuildMessageEvent):
-    bot = get_driver().bots[bot_id]
+async def guild_process():
     await refresh_all_rss()
-    # todo guildId根据api获取，并通过for循环推送
-    gid = 13914601637229449
-    rss_list = default_rss
-    if str(gid) in data['guild_rss']:
-        rss_list = data['guild_rss'][str(gid)]
-    else:
-        data['guild_rss'][str(gid)] = default_rss
-    for rss_url in rss_list:
-        if rss_url in rss_news:
-            news_list = rss_news[rss_url]
-            for news in reversed(news_list):
-                msg = None
-                if str(gid) in data['guild_mode'] and data['guild_mode'][str(gid)] == 1:
-                    msg = format_brief_msg(news)
-                else:
-                    msg = format_msg(news)
-                try:
-                    await patched_send(bot, event, msg)
-                except:
-                    logger.info(f'群 {gid} 推送失败')
-            await asyncio.sleep(1)
+    # todo 这么写rss失去了意义
+    for key in data['guild_rss']:
+        for rss_url in data['guild_rss'][key]:
+            if rss_url in rss_news:
+                news_list = rss_news[rss_url]
+                for news in reversed(news_list):
+                    msg = None
+                    if str(key) in data['guild_mode'] and data['guild_mode'][str(key)] == 1:
+                        msg = format_brief_msg(news)
+                    else:
+                        msg = format_msg(news)
+                    try:
+                        await send_guild_message(key.split("_")[0], key.split("_")[1], msg)
+                    except:
+                        logger.info(f'guild: {key} 推送失败')
+                await asyncio.sleep(1)
 
 
-async def rss_add(guild_id, rss_url):
-    guild_id = str(guild_id)
+async def rss_add(gc_id, rss_url):
+    gc_id = str(gc_id)
     proxy = ''
     for purl in data['proxy_urls']:
         if purl in rss_url:
@@ -333,35 +328,35 @@ async def rss_add(guild_id, rss_url):
     if feed['bozo'] != 0:
         return f'无法解析rss源:{rss_url}'
 
-    if guild_id not in data['guild_rss']:
-        data['guild_rss'][guild_id] = default_rss
-    if rss_url not in set(data['guild_rss'][guild_id]):
-        data['guild_rss'][guild_id].append(rss_url)
+    if gc_id not in data['guild_rss']:
+        data['guild_rss'][gc_id] = default_rss
+    if rss_url not in set(data['guild_rss'][gc_id]):
+        data['guild_rss'][gc_id].append(rss_url)
     else:
         return '订阅列表中已存在该项目'
     save_data()
     return '添加成功'
 
 
-def rss_remove(guild_id, i):
-    guild_id = str(guild_id)
-    if guild_id not in data['guild_rss']:
-        data['guild_rss'][guild_id] = default_rss
-    if i >= len(data['guild_rss'][guild_id]):
+def rss_remove(gc_id, i):
+    gc_id = str(gc_id)
+    if gc_id not in data['guild_rss']:
+        data['guild_rss'][gc_id] = default_rss
+    if i >= len(data['guild_rss'][gc_id]):
         return '序号超出范围'
-    data['guild_rss'][guild_id].pop(i)
+    data['guild_rss'][gc_id].pop(i)
     save_data()
-    return '删除成功\n当前' + rss_get_list(guild_id)
+    return '删除成功\n当前' + rss_get_list(gc_id)
 
 
-def rss_get_list(guild_id):
-    guild_id = str(guild_id)
-    if guild_id not in data['guild_rss']:
-        data['guild_rss'][guild_id] = default_rss
+def rss_get_list(gc_id):
+    gc_id = str(gc_id)
+    if gc_id not in data['guild_rss']:
+        data['guild_rss'][gc_id] = default_rss
     msg = '订阅列表:'
-    num = len(data['guild_rss'][guild_id])
+    num = len(data['guild_rss'][gc_id])
     for i in range(num):
-        url = data['guild_rss'][guild_id][i]
+        url = data['guild_rss'][gc_id][i]
         url = re.sub(r'http[s]*?://.*?/', '/', url)
         msg += f"\n{i}. {url}"
     if num == 0:
@@ -369,14 +364,14 @@ def rss_get_list(guild_id):
     return msg
 
 
-def rss_set_mode(guild_id, mode):
-    guild_id = str(guild_id)
+def rss_set_mode(gc_id, mode):
+    gc_id = str(gc_id)
     mode = int(mode)
     if mode > 0:
-        data['guild_mode'][guild_id] = 1
+        data['guild_mode'][gc_id] = 1
         msg = '已设置为简略模式'
     else:
-        data['guild_mode'][guild_id] = 0
+        data['guild_mode'][gc_id] = 0
         msg = '已设置为标准模式'
     save_data()
     return msg
@@ -390,7 +385,7 @@ async def rss_cmd(bot: Bot, event: GuildMessageEvent):
     if event.get_user_id() == bot_id:
         pass
     msg = ''
-    guild_id = event.guild_id
+    gc_id = f'{event.guild_id}_{event.channel_id}'
     args = event.get_plaintext().split(' ')
     # todo 判断为管理员再进行操作
     is_admin = True
@@ -402,7 +397,7 @@ async def rss_cmd(bot: Bot, event: GuildMessageEvent):
         if not is_admin:
             msg = '权限不足'
         elif len(args) >= 2:
-            msg = await rss_add(guild_id, args[1])
+            msg = await rss_add(gc_id, args[1])
         else:
             msg = '需要附带rss地址'
     elif args[0] == 'addb' or args[0] == 'add-bilibili':
@@ -410,7 +405,7 @@ async def rss_cmd(bot: Bot, event: GuildMessageEvent):
             msg = '权限不足'
         elif len(args) >= 2 and args[1].isdigit():
             rss_url = data['rsshub'] + '/bilibili/user/dynamic/' + str(args[1])
-            msg = await rss_add(guild_id, rss_url)
+            msg = await rss_add(gc_id, rss_url)
         else:
             msg = '需要附带up主id'
     elif args[0] == 'addr' or args[0] == 'add-route':
@@ -418,7 +413,7 @@ async def rss_cmd(bot: Bot, event: GuildMessageEvent):
             msg = '权限不足'
         elif len(args) >= 2:
             rss_url = data['rsshub'] + args[1]
-            msg = await rss_add(guild_id, rss_url)
+            msg = await rss_add(gc_id, rss_url)
         else:
             msg = '需要提供route参数'
         pass
@@ -426,32 +421,26 @@ async def rss_cmd(bot: Bot, event: GuildMessageEvent):
         if not is_admin:
             msg = '权限不足'
         elif len(args) >= 2 and args[1].isdigit():
-            msg = rss_remove(guild_id, int(args[1]))
+            msg = rss_remove(gc_id, int(args[1]))
         else:
             msg = '需要提供要删除rss订阅的序号'
     elif args[0] == 'list' or args[0] == 'ls':
-        msg = rss_get_list(guild_id)
+        msg = rss_get_list(gc_id)
     elif args[0] == 'mode':
         if not is_admin:
             msg = '权限不足'
         elif len(args) >= 2 and args[1].isdigit():
-            msg = rss_set_mode(guild_id, args[1])
+            msg = rss_set_mode(gc_id, args[1])
         else:
             msg = '需要附带模式(0/1)'
     else:
         msg = '参数错误'
-    await rss.send(MessageSegment.text(msg))
+    await rss.send(Message(msg))
 
 
 scheduler = require("nonebot_plugin_apscheduler").scheduler
 
-#todo 频道列表和子频道列表动态传参
+
 @scheduler.scheduled_job('interval', minutes=5)
 async def job():
-    sender = Sender(user_id=bot_guild_id)
-    event = GuildMessageEvent(time=int(time.time()), self_id=bot_id,
-                              post_type='message', sub_type='channel', user_id=bot_guild_id,
-                              message_type='guild', message_id='133-38101123160', guild_id='13914601637229449',
-                              channel_id='1480002', message="0",
-                              sender=sender, self_tiny_id=int(bot_guild_id))
-    await guild_process(event)
+    await guild_process()
