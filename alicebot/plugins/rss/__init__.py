@@ -83,14 +83,14 @@ def load_data():
                 data['proxy_urls'] = d['proxy_urls']
     except:
         traceback.print_exc()
-    global default_rss
+    # global default_rss
 
 
 load_data()
 
-default_rss = [
-    data['rsshub'] + '/bilibili/user/dynamic/353840826',  # pcr官方号
-]
+# default_rss = [
+#     data['rsshub'] + '/bilibili/user/dynamic/353840826',  # pcr官方号
+# ]
 
 
 async def query_data(url, proxy=''):
@@ -259,9 +259,9 @@ async def get_rss_news(rss_url):
 
 
 async def refresh_all_rss():
-    for item in default_rss:
-        if item not in rss_news:
-            rss_news[item] = []
+    # for item in default_rss:
+    #     if item not in rss_news:
+    #         rss_news[item] = []
     for guild_rss in data['guild_rss'].values():
         for rss_url in guild_rss:
             if rss_url not in rss_news:
@@ -329,7 +329,8 @@ async def rss_add(gc_id, rss_url):
         return f'无法解析rss源:{rss_url}'
 
     if gc_id not in data['guild_rss']:
-        data['guild_rss'][gc_id] = default_rss
+        pass
+        # data['guild_rss'][gc_id] = default_rss
     if rss_url not in set(data['guild_rss'][gc_id]):
         data['guild_rss'][gc_id].append(rss_url)
     else:
@@ -341,7 +342,8 @@ async def rss_add(gc_id, rss_url):
 def rss_remove(gc_id, i):
     gc_id = str(gc_id)
     if gc_id not in data['guild_rss']:
-        data['guild_rss'][gc_id] = default_rss
+        return '订阅列表已经是空的啦'
+        # data['guild_rss'][gc_id] = default_rss
     if i >= len(data['guild_rss'][gc_id]):
         return '序号超出范围'
     data['guild_rss'][gc_id].pop(i)
@@ -352,7 +354,8 @@ def rss_remove(gc_id, i):
 def rss_get_list(gc_id):
     gc_id = str(gc_id)
     if gc_id not in data['guild_rss']:
-        data['guild_rss'][gc_id] = default_rss
+        return '该频道暂无订阅~'
+        # data['guild_rss'][gc_id] = default_rss
     msg = '订阅列表:'
     num = len(data['guild_rss'][gc_id])
     for i in range(num):
