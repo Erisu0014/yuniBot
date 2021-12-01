@@ -386,7 +386,7 @@ rss = on_command('rss')
 @rss.handle()
 async def rss_cmd(bot: Bot, event: GuildMessageEvent):
     if event.get_user_id() == bot_id:
-        pass
+        return
     msg = ''
     gc_id = f'{event.guild_id}_{event.channel_id}'
     args = event.get_plaintext().split(' ')

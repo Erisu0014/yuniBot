@@ -40,7 +40,7 @@ scheduler = require("nonebot_plugin_apscheduler").scheduler
 
 @scheduler.scheduled_job("cron", hour=17, minute=30, id="xiaban")
 async def xiaban():
-    with open('D:\\pycharmProjects\\aliceBot\\emoji\\重炮收到.gif', 'rb') as f:
+    with open('D:\\pycharmProjects\\aliceBot\\emoji\\下班啦下班啦.gif', 'rb') as f:
         data = f.read()
         f.close()
         await send_guild_message('13914601637229449', '1480002', f"下班啦下班啦~{MessageSegment.image(data)}")
