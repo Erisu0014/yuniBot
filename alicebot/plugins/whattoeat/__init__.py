@@ -6,19 +6,19 @@
 @DES     : 
 """
 import os
-from nonebot import get_bot, logger
-from nonebot import get_driver
-from nonebot.adapters.cqhttp import Bot, Message, MessageSegment
-from nonebot.typing import T_State
-from .config import Config
-from nonebot.plugin import on_command, on_regex
-from alicebot.plugins.nonebot_guild_patch import GuildMessageEvent
-import traceback
-import requests
 import random
 import re
+
 import filetype
 import requests
+from nonebot import get_driver
+from nonebot import logger
+from nonebot.adapters.cqhttp import Bot, Message, MessageSegment
+from nonebot.plugin import on_command, on_regex
+from nonebot.typing import T_State
+
+from alicebot.plugins.nonebot_guild_patch import GuildMessageEvent
+from .config import Config
 
 global_config = get_driver().config
 config = Config(**global_config.dict())
